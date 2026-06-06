@@ -1,0 +1,7 @@
+# Images
+src/main/resources/raph/projects/towerdefense/Images/
+
+# IntelliJ
+.idea/
+*.iml
+target/

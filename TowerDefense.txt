@@ -1,0 +1,57 @@
+- Idée de base: 
+
+Petit jeu de type tower defense, avec 5 niveaux différents, quelques ennemis-types et quelques tours. Je veux également un mode où l'objectif est de survivre au plus de vagues d'ennemis possibles. Le but est de défendre sa base contre les ennemis en construisant des tours sur le chemin qui mène à la dite base. Chaque tour nécessite une certaine quantité de ressources pour être construite et améliorée. Les ressources sont obtenues en éliminant des ennemis.
+
+- Détails des ennemis:
+
+Les ennemis sont classés selon 3 critères, chacun noté sur 5: Vitesse, Resistance, Dégats. Le format de notation des ennemis est V/R/D. Donc un ennemi ayant 1 en vitesse, 2 en Resistance et 3 en Dégats sera noté 1/2/3.
+
+1 - ennemi standard: 3/3/3
+2 - ennemi rapide: 4/2/2
+3 - ennemi resistant: 1/5/4
+4 - ennemi "essaim": 5/1/1
+5 - ennemi puissant: 2/4/5
+
+- Détails des tours:
+
+De façon similaire aux ennemis, les tours sont classées selon 3 critères, notés sur 5 également: Cadence de tir, Portée, Dégats. Le format de notation des tours est donc C/P/D. La seule différence avec les ennemis est que les tours possèdent deux niveaux.
+
+1 - tour standard: 2/2/2 - 2/3/3 
+2 - tour longue portée: 3/3/1 - 3/5/2
+3 - tour puissante : 1/2/4 - 1/3/5 - dégats de zone
+4 - tour ralentissante : 1/2/0 - 1/3/0 - ralentis les ennemis
+5 - tour "railgun": 1/5/2 - 1/5/4 - touche plusieurs ennemis
+
+- Détails des niveaux: 
+
+Un niveau par nouveau type d'ennemi. Les niveaux sont caractérisés par les tours utilisables et les ennemis présents, sous le format ennemis/tours. Les niveaux sont divisés en deux phases qui s'alternent au cours du niveau. La première est la phase de construction durant laquelle le joueur peut placer ses tours sans craindre l'arrivée des monstres. La deuxième, la phase d'attaque durant laquelle les ennemis attquent et les tours défendent. On a ainsi entre 3 et 6 cycles par niveaux avec à chaque début de phase d'attaque, une augmentation du nombre d'ennemis.
+
+1 - 1/1 - Penser à mettre un petit tuto au début.
+2 - 1,2/1,2
+3 - 1,2,3/1,2,3
+4 - 1,2,3,4/1,2,3,4
+5 - 1,2,3,4,5/1,2,3,4,5
+
+- Détails de la fenêtre graphique:
+
+1 - Menu principal
+
+2 - Menu de sélection de niveaux
+
+3 - Fenêtre de jeu
+
+┌──────────────────────────────────────┐  ↑
+│                                      │  │
+│         Zone de jeu  30 × 14        │  896px (14×64)
+│                                      │  │
+├──────────────────────────────────────┤  ↓
+│     HUD : argent, vies, vagues...    │  184px
+└──────────────────────────────────────┘
+
+4 - Fenêtre de fin de partie
+
+- Détails graphismes
+
+Textures en 64x64 pixels. 
+
+
