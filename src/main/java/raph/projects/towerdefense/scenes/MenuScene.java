@@ -21,7 +21,6 @@ public class MenuScene
     private Scene scene;
 
     public MenuScene(Stage stage) throws IOException {
-        Map level_1 = new Map(1);
 
         Region spacerTop = new Region();
         Region spacerMiddle = new Region();
