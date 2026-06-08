@@ -52,7 +52,6 @@ public class MenuScene
                         stage.setScene(gameScene.getScene());
 
                         stage.setScene(gameScene.getScene());
-                        gameScene.startAttackPhase();
                     } catch (IOException ex) {
                         throw new RuntimeException(ex);
                     }

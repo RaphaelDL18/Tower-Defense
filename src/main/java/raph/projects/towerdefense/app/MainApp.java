@@ -50,7 +50,7 @@ public class MainApp extends Application {
     {
         Screen screen = Screen.getPrimary();
         Rectangle2D bounds = screen.getVisualBounds();
-        double scale = Math.min(bounds.getWidth() / 1920.0, bounds.getHeight() / 1200.0);
+        double scale = Math.min(bounds.getWidth() / 1920.0, bounds.getHeight() / 1080.0);
 
         stage.getScene().getRoot().setScaleX(scale);
         stage.getScene().getRoot().setScaleY(scale);

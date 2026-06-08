@@ -6,6 +6,8 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -32,16 +34,14 @@ public class GameScene {
     private List<Enemy> enemies;
     private Pane paneMap;
     private Pane paneEnemies;
-    private Pane paneHUD;
-    private StackPane gameRoot;
 
-    public GameScene(Stage stage, int id) throws IOException
-    {
+    public GameScene(Stage stage, int id) throws IOException {
         this.level = new Level(id, new Map(id));
         this.lastUpdate = 0;
         this.enemies = new ArrayList<>();
         this.waveHandler = new WaveHandler(level.getWaves(), 1.5, 3.0);
 
+        // --- Pane map ---
         this.paneMap = new Pane();
         for (int i = 0; i < HEIGHT; i++)
         {
@@ -53,31 +53,30 @@ public class GameScene {
         }
 
         this.paneEnemies = new Pane();
-
         Pane paneTowers  = new Pane();
         Pane paneEffects = new Pane();
 
-        this.gameRoot = new StackPane(paneMap, paneTowers, paneEnemies, paneEffects);
+        StackPane gameRoot = new StackPane(paneMap, paneTowers, paneEnemies, paneEffects);
         gameRoot.setPrefSize(1920, 896);
+        gameRoot.setMinSize(1920, 896);
+        gameRoot.setMaxSize(1920, 896);
 
-        this.paneHUD = new Pane();
-        this.initHUD();
+        HBox hud = buildHUD();
 
-        this.paneHUD.setPrefSize(1920, 184);
+        VBox root = new VBox(gameRoot, hud);
+        root.setPrefSize(1920, 1080);
+        VBox.setVgrow(hud, Priority.NEVER);
+        hud.setMinHeight(184);
+        hud.setMaxHeight(184);
+        hud.setPrefHeight(184);
 
-
-
-        VBox layout = new VBox(gameRoot, paneHUD);
-        this.scene = new Scene(layout, 1920, 1080, Color.BLACK);
+        this.scene = new Scene(root, 1920, 1080, Color.BLACK);
 
         // --- Game loop ---
-        gameLoop = new AnimationTimer()
-        {
+        gameLoop = new AnimationTimer() {
             @Override
-            public void handle(long now)
-            {
-                if (lastUpdate == 0)
-                {
+            public void handle(long now) {
+                if (lastUpdate == 0) {
                     lastUpdate = now;
                     return;
                 }
@@ -86,6 +85,68 @@ public class GameScene {
                 update(dt);
             }
         };
+    }
+
+    private HBox buildHUD() {
+        // Boutons tours
+        Button tower_1 = makeButton("/raph/projects/towerdefense/Images/Blank.png");
+        Button tower_2 = makeButton("/raph/projects/towerdefense/Images/Blank.png");
+        Button tower_3 = makeButton("/raph/projects/towerdefense/Images/Blank.png");
+        Button tower_4 = makeButton("/raph/projects/towerdefense/Images/Blank.png");
+        Button tower_5 = makeButton("/raph/projects/towerdefense/Images/Blank.png");
+        Button play    = makeButton("/raph/projects/towerdefense/Images/HUD/Play.png");
+        play.setOnAction(e -> { this.startAttackPhase();});
+
+        // Labels
+        Label goldLabel  = makeLabel("💰 250");
+        Label livesLabel = makeLabel("❤️ 20");
+        Label waveLabel  = makeLabel("Wave 1/5");
+
+        // Groupe tours gauche
+        HBox towersBox = new HBox(10, tower_1, tower_2, tower_3, tower_4, tower_5);
+        towersBox.setAlignment(Pos.CENTER_LEFT);
+
+        // Groupe infos centre
+        HBox infoBox = new HBox(40, goldLabel, livesLabel, waveLabel);
+        infoBox.setAlignment(Pos.CENTER);
+
+        // Spacers
+        Region spacerLeft  = new Region();
+        Region spacerRight = new Region();
+        HBox.setHgrow(spacerLeft,  Priority.ALWAYS);
+        HBox.setHgrow(spacerRight, Priority.ALWAYS);
+
+        // HUD principal
+        HBox hud = new HBox(20, towersBox, spacerLeft, infoBox, spacerRight, play);
+        hud.setAlignment(Pos.CENTER);
+        hud.setPrefSize(1920, 184);
+        hud.setMinSize(1920, 184);
+        hud.setMaxSize(Double.MAX_VALUE, 184);
+        hud.setPadding(new Insets(0, 20, 0, 20));
+        hud.setStyle("-fx-background-color: black;");
+
+        return hud;
+    }
+
+    private Button makeButton(String path)
+    {
+        Button b = new Button();
+        Image img = new Image(getClass().getResourceAsStream(path));
+        ImageView iv = new ImageView(img);
+        b.setGraphic(iv);
+        iv.setFitWidth(140);
+        iv.setFitHeight(140);
+        iv.setPreserveRatio(true);
+        b.setPrefSize(140, 140);
+        b.setMinSize(140, 140);
+        b.setMaxSize(140, 140);
+        return b;
+    }
+
+    private Label makeLabel(String text) {
+        Label l = new Label(text);
+        l.setStyle("-fx-font-size: 28px; -fx-text-fill: white;");
+        return l;
     }
 
     public Scene getScene() {
@@ -104,20 +165,15 @@ public class GameScene {
 
     private void update(double dt) {
         if (level.getPhase() == Phase.DEFENSE) {
-            // spawn
             waveHandler.update(dt);
             if (waveHandler.shouldSpawn()) {
                 spawnEnemy();
                 waveHandler.decrementSpawn();
             }
-
-            // déplacement
             updateEnemies(dt);
-
-            // fin de vague
             if (waveHandler.isWaveFinished() && enemies.isEmpty()) {
                 if (waveHandler.isLevelFinished()) {
-                    // TODO : niveau terminé → GameOverScene ou écran victoire
+                    // TODO : victoire
                 } else {
                     waveHandler.notifyWaveCleared();
                     stopAttackPhase();
@@ -126,12 +182,10 @@ public class GameScene {
         }
     }
 
-    private void updateEnemies(double dt)
-    {
+    private void updateEnemies(double dt) {
         for (Enemy e : enemies) {
             e.update(dt);
         }
-        // supprime les ennemis morts ou arrivés à la base
         enemies.removeIf(e -> {
             if (!e.isAlive() || e.hasReachedBase()) {
                 paneEnemies.getChildren().remove(e.getSprite().getCurrentFrame());
@@ -141,73 +195,10 @@ public class GameScene {
         });
     }
 
-    private void spawnEnemy()
-    {
+    private void spawnEnemy() {
         Enemy e = waveHandler.getNextEnemy();
         enemies.add(e);
         e.getSprite().play();
         paneEnemies.getChildren().add(e.getSprite().getCurrentFrame());
     }
-
-    private void initHUD()
-    {
-        Region spacerTop = new Region();
-        spacerTop.setPrefHeight(17);
-        spacerTop.setMaxHeight(17);
-
-        Region spacerBottom = new Region();
-        spacerBottom.setPrefHeight(17);
-        spacerBottom.setMaxHeight(17);
-
-        Button tower_1 = new Button("Tower_1");
-        tower_1.setPrefSize(150, 150);
-        tower_1.setMinSize(150, 150);
-        tower_1.setMaxSize(150, 150);
-
-        Button tower_2 = new Button("Tower_2");
-        tower_2.setPrefSize(150, 150);
-        tower_2.setMinSize(150, 150);
-        tower_2.setMaxSize(150, 150);
-
-        Button tower_3 = new Button("Tower_3");
-        tower_3.setPrefSize(150, 150);
-        tower_3.setMinSize(150, 150);
-        tower_3.setMaxSize(150, 150);
-
-        Button tower_4 = new Button("Tower_4");
-        tower_4.setPrefSize(150, 150);
-        tower_4.setMinSize(150, 150);
-        tower_4.setMaxSize(150, 150);
-
-        Button tower_5 = new Button("Tower_5");
-        tower_5.setPrefSize(150, 150);
-        tower_5.setMinSize(150, 150);
-        tower_5.setMaxSize(150, 150);
-
-        Label goldLabel = new Label("💰 250");
-        Label livesLabel = new Label("❤️ 20");
-        Label waveLabel = new Label("Wave 1/5");
-
-        Button play = new Button("Play");
-        play.setPrefSize(150, 150);
-        play.setMinSize(150, 150);
-        play.setMaxSize(150, 150);
-
-        HBox subLayout = new HBox(tower_1,tower_2,tower_3,tower_4,tower_5,goldLabel,livesLabel,waveLabel,play);
-        subLayout.setPrefWidth(1920);
-        subLayout.setAlignment(Pos.CENTER_LEFT);
-        subLayout.setSpacing(20);
-        subLayout.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(subLayout, Priority.ALWAYS);
-        HBox.setMargin(goldLabel, new Insets(0, 20, 0, 40)); // marge à gauche des labels
-
-        VBox layout = new VBox(spacerTop, subLayout, spacerBottom );
-        layout.setPrefSize(1920, 184);
-        VBox.setVgrow(this.gameRoot, Priority.ALWAYS);
-
-        this.paneHUD.getChildren().add(layout);
-
-    }
 }
-
-
