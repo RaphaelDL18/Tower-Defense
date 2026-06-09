@@ -54,5 +54,6 @@ public class MainApp extends Application {
 
         stage.getScene().getRoot().setScaleX(scale);
         stage.getScene().getRoot().setScaleY(scale);
+
     }
 }
