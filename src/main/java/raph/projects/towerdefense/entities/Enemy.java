@@ -22,7 +22,8 @@ public class Enemy extends Entity implements Damageable, DamageDealer
         this.x = path[0].getGridY() * Tile.TILE_SIZE;
         this.y = path[0].getGridX() * Tile.TILE_SIZE;
 
-        switch(this.type) {
+        switch(this.type)
+        {
             case GOBELIN -> {
                 this.health = 3;
                 this.speed = 3;
@@ -65,11 +66,6 @@ public class Enemy extends Entity implements Damageable, DamageDealer
     public void setSpeed(int s)
     {
         this.speed = s;
-    }
-
-    public Sprite getSprite()
-    {
-        return this.sprite;
     }
 
     public static Sprite initSprite(EnemyType t)

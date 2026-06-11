@@ -23,7 +23,7 @@ public abstract class Entity
         this.sprite = s;
     }
 
-    private Sprite getSprite()
+    public Sprite getSprite()
     {
         return this.sprite;
     }
@@ -49,5 +49,6 @@ public abstract class Entity
             }
         }
     }
+
 
 }
