@@ -15,10 +15,12 @@ import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 import raph.projects.towerdefense.*;
 import raph.projects.towerdefense.entities.Enemy;
+import raph.projects.towerdefense.entities.Projectile;
 import raph.projects.towerdefense.entities.Tower;
 import raph.projects.towerdefense.entities.TowerType;
 
 import java.io.IOException;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,30 +31,41 @@ public class GameScene {
 
     private Scene scene;
     private Level level;
+
     private AnimationTimer gameLoop;
     private long lastUpdate;
     private WaveHandler waveHandler;
     private List<Enemy> enemies;
+
+    private List<Tower> towers;
     private TowerType selectedTower;
     private ImageView ghostTower;
     private Circle range;
+
+    private List<Projectile> projectiles;
+
     private Pane paneMap;
     private Pane paneEnemies;
     private Pane paneEffects;
     private Pane paneTowers;
+    private Pane paneProjectiles;
 
     public GameScene(Stage stage, int id) throws IOException
     {
         this.level = new Level(id, new Map(id));
+
         this.lastUpdate = 0;
-        this.enemies = new ArrayList<>();
+        this.enemies = new ArrayList<Enemy>();
         this.waveHandler = new WaveHandler(level.getWaves(), 1.5, 3.0);
+
         this.selectedTower = null;
         this.range = new Circle();
+        this.towers = new ArrayList<Tower>();
+
+        this.projectiles = new ArrayList<Projectile>();
 
         this.paneEffects = new Pane();
         this.paneEffects.setMouseTransparent(true);
-
         this.paneMap = new Pane();
         // --- Pane map ---
         for (int i = 0; i < HEIGHT; i++)
@@ -66,6 +79,10 @@ public class GameScene {
 
         this.paneEnemies = new Pane();
 
+        this.paneTowers  = new Pane();
+
+        this.paneProjectiles = new Pane();
+
         this.ghostTower = new ImageView();
         this.ghostTower.setFitWidth(64);
         this.ghostTower.setFitHeight(64);
@@ -73,9 +90,7 @@ public class GameScene {
         ghostTower.setVisible(false);
         this.paneEffects.getChildren().add(ghostTower);
 
-        this.paneTowers  = new Pane();
-
-        StackPane gameRoot = new StackPane(paneMap, paneTowers, paneEnemies, paneEffects);
+        StackPane gameRoot = new StackPane(paneMap, paneTowers, paneEnemies, paneProjectiles, paneEffects);
         gameRoot.setPrefSize(1920, 896);
         gameRoot.setMinSize(1920, 896);
         gameRoot.setMaxSize(1920, 896);
@@ -257,7 +272,7 @@ public class GameScene {
                 spawnEnemy();
                 waveHandler.decrementSpawn();
             }
-            updateEnemies(dt);
+            this.updateEnemies(dt);
             if (waveHandler.isWaveFinished() && enemies.isEmpty())
             {
                 if (waveHandler.isLevelFinished())
@@ -271,13 +286,9 @@ public class GameScene {
                     stopAttackPhase();
                 }
             }
-        }
-        else
-        {
-            if(this.selectedTower != null)
-            {
+            this.updateTowers(dt);
+            this.updateProjectiles(dt);
 
-            }
         }
     }
 
@@ -351,12 +362,39 @@ public class GameScene {
     private void placeTower(TowerType type,int col, int row)
     {
         Tower t = new Tower(type,"/raph/projects/towerdefense/Images/Towers/Icons/Cannon_Icon.png");
-        t.move(col*Tile.TILE_SIZE,row*Tile.TILE_SIZE);
+        this.towers.add(t);
         t.getSprite().play();
+
+        t.move(col*Tile.TILE_SIZE,row*Tile.TILE_SIZE);
         t.getSprite().getCurrentFrame().setX(col*Tile.TILE_SIZE);
         t.getSprite().getCurrentFrame().setY(row*Tile.TILE_SIZE);
+
         this.paneTowers.getChildren().add(t.getSprite().getCurrentFrame());
         this.range.setVisible(false);
         this.ghostTower.setVisible(false);
+    }
+
+    private void updateTowers(double dt) {
+        for (Tower t : this.towers) {
+            t.update(dt, this.enemies);
+            Projectile p = t.shoot();
+            if (p != null) {
+                this.projectiles.add(p);
+                this.paneProjectiles.getChildren().add(p.getSprite().getCurrentFrame());
+            }
+        }
+    }
+
+    private void updateProjectiles(double dt) {
+        for (Projectile p : projectiles) {
+            p.update(dt);
+        }
+        projectiles.removeIf(p -> {
+            if (p.isFinished()) {
+                paneProjectiles.getChildren().remove(p.getSprite().getCurrentFrame());
+                return true;
+            }
+            return false;
+        });
     }
 }

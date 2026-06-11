@@ -35,6 +35,14 @@ public abstract class Entity
         this.updateTilePosition();
     }
 
+    public double getX() {
+        return x;
+    }
+
+    public double getY() {
+        return y;
+    }
+
     public void updateTilePosition()
     {
         for(int i = 0; i < Map.HEIGHT ; i++)

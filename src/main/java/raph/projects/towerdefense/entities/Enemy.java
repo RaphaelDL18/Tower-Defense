@@ -12,6 +12,9 @@ public class Enemy extends Entity implements Damageable, DamageDealer
     private Tile[] path;
     private int pathIndex;
 
+    private double vx;
+    private double vy;
+
     public Enemy(EnemyType t, Tile[] path)
     {
         super(initSprite(t));
@@ -25,7 +28,7 @@ public class Enemy extends Entity implements Damageable, DamageDealer
         switch(this.type)
         {
             case GOBELIN -> {
-                this.health = 3;
+                this.health = 20;
                 this.speed = 3;
                 this.damage = 3;
             }
@@ -68,6 +71,10 @@ public class Enemy extends Entity implements Damageable, DamageDealer
         this.speed = s;
     }
 
+    public double getVelocityX() { return this.vx; }
+
+    public double getVelocityY() { return this.vy; }
+
     public static Sprite initSprite(EnemyType t)
     {
         return switch(t)
@@ -79,37 +86,43 @@ public class Enemy extends Entity implements Damageable, DamageDealer
 
     public void update(double dt)
     {
-        if (this.pathIndex >= this.path.length) return; // arrivé à la base
+        if (this.pathIndex >= this.path.length) return;
 
-        // cible en pixels
         double targetX = this.path[this.pathIndex].getGridY() * Tile.TILE_SIZE;
         double targetY = this.path[this.pathIndex].getGridX() * Tile.TILE_SIZE;
 
-        // direction vers la cible
         double dx = targetX - this.x;
         double dy = targetY - this.y;
         double distance = Math.sqrt(dx * dx + dy * dy);
 
-        double pixelsPerSecond = this.speed * 64; // 1 de speed = 64px/s
+        double pixelsPerSecond = this.speed * 64;
+
+        double oldX = this.x;
+        double oldY = this.y;
 
         if (distance <= pixelsPerSecond * dt) {
-            // on est arrivé sur la case cible
             this.x = targetX;
             this.y = targetY;
             pathIndex++;
         } else {
-            // on avance vers la cible
             this.x += (dx / distance) * pixelsPerSecond * dt;
             this.y += (dy / distance) * pixelsPerSecond * dt;
         }
 
-        // mise à jour de l'ImageView
+        this.vx = (this.x - oldX) / dt;
+        this.vy = (this.y - oldY) / dt;
+
         this.sprite.getCurrentFrame().setX(this.x);
         this.sprite.getCurrentFrame().setY(this.y);
     }
 
     public boolean hasReachedBase() {
         return this.pathIndex >= this.path.length;
+    }
+
+    public int getPathIndex()
+    {
+        return this.pathIndex;
     }
 
     @Override
