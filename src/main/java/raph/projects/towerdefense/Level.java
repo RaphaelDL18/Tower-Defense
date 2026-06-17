@@ -1,5 +1,6 @@
 package raph.projects.towerdefense;
 
+import raph.projects.towerdefense.entities.Base;
 import raph.projects.towerdefense.entities.EnemyGroup;
 import raph.projects.towerdefense.entities.EnemyType;
 import raph.projects.towerdefense.entities.Wave;
@@ -13,6 +14,7 @@ public class Level
     private int id;
     private Map map;
     private Phase phase;
+    private Base base;
     private List<Wave> waves;
     private int currentWave;
 
@@ -21,9 +23,15 @@ public class Level
         this.id = i;
         this.map = m;
         this.phase = Phase.CONSTRUCTION;
+        this.base = new Base();
+
         this.currentWave = 0;
         this.waves = new ArrayList<Wave>();
         initWaves();
+    }
+
+    public Base getBase() {
+        return base;
     }
 
     public Map getMap()

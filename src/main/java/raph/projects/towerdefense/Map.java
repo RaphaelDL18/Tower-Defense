@@ -177,7 +177,13 @@ public class Map
                             case 23 ->
                             {
                                 t = TileType.BORDER_RIGHT;
-
+                                random = rand.nextInt(3) + 1;
+                                switch (random)
+                                {
+                                    case 1 -> path = "/raph/projects/towerdefense/Images/Level-1/Border_Right_1.png";
+                                    case 2 -> path = "/raph/projects/towerdefense/Images/Level-1/Border_Right_2.png";
+                                    case 3 -> path = "/raph/projects/towerdefense/Images/Level-1/Border_Right_3.png";
+                                }
                             }
 
                             case 24 ->
@@ -189,6 +195,13 @@ public class Map
                             case 25 ->
                             {
                                 t = TileType.BORDER_BOTTOM;
+                                random = rand.nextInt(3) + 1;
+                                switch (random)
+                                {
+                                    case 1 -> path = "/raph/projects/towerdefense/Images/Level-1/Border_Bottom_1.png";
+                                    case 2 -> path = "/raph/projects/towerdefense/Images/Level-1/Border_Bottom_2.png";
+                                    case 3 -> path = "/raph/projects/towerdefense/Images/Level-1/Border_Bottom_3.png";
+                                }
 
                             }
 
@@ -202,7 +215,13 @@ public class Map
                             case 27 ->
                             {
                                 t = TileType.BORDER_LEFT;
-
+                                random = rand.nextInt(3) + 1;
+                                switch (random)
+                                {
+                                    case 1 -> path = "/raph/projects/towerdefense/Images/Level-1/Border_Left_1.png";
+                                    case 2 -> path = "/raph/projects/towerdefense/Images/Level-1/Border_Left_2.png";
+                                    case 3 -> path = "/raph/projects/towerdefense/Images/Level-1/Border_Left_3.png";
+                                }
                             }
 
                             case 28 ->
@@ -212,16 +231,16 @@ public class Map
                             }
 
                             default ->
-                                     {
-                                         t = TileType.TOWER_SLOT;
-                                         random = rand.nextInt(3) + 1;
-                                         switch (random)
-                                         {
-                                             case 1 -> path = "/raph/projects/towerdefense/Images/Level-1/Tower_Slot_1.png";
-                                             case 2 -> path = "/raph/projects/towerdefense/Images/Level-1/Tower_Slot_2.png";
-                                             case 3 -> path = "/raph/projects/towerdefense/Images/Level-1/Tower_Slot_3.png";
-                                         }
-                                     }
+                            {
+                                t = TileType.TOWER_SLOT;
+                                random = rand.nextInt(3) + 1;
+                                switch (random)
+                                {
+                                    case 1 -> path = "/raph/projects/towerdefense/Images/Level-1/Tower_Slot_1.png";
+                                    case 2 -> path = "/raph/projects/towerdefense/Images/Level-1/Tower_Slot_2.png";
+                                    case 3 -> path = "/raph/projects/towerdefense/Images/Level-1/Tower_Slot_3.png";
+                                }
+                            }
                         }
                     }
 

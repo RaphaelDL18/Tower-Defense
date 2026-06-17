@@ -4,9 +4,13 @@ public class Base implements Damageable
 {
     private int health;
 
-    public Base(int h)
+    public Base()
     {
-        this.health=h;
+        this.health=20;
+    }
+
+    public int getHealth() {
+        return health;
     }
 
     @Override

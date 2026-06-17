@@ -6,12 +6,14 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.effect.GaussianBlur;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import raph.projects.towerdefense.*;
 import raph.projects.towerdefense.entities.Enemy;
@@ -20,7 +22,6 @@ import raph.projects.towerdefense.entities.Tower;
 import raph.projects.towerdefense.entities.TowerType;
 
 import java.io.IOException;
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,8 +30,12 @@ import static raph.projects.towerdefense.Map.WIDTH;
 
 public class GameScene {
 
+    private Stage stage;
     private Scene scene;
     private Level level;
+    private int id;
+    private boolean baseDestroyed;
+    private boolean gameOverShown;
 
     private AnimationTimer gameLoop;
     private long lastUpdate;
@@ -49,131 +54,126 @@ public class GameScene {
     private Pane paneEffects;
     private Pane paneTowers;
     private Pane paneProjectiles;
+    private StackPane paneGameOver;
+    private StackPane gameRoot;
+    private StackPane rootStack;
 
     public GameScene(Stage stage, int id) throws IOException
     {
+        this.stage = stage;
         this.level = new Level(id, new Map(id));
+        this.id = id;
+        this.baseDestroyed = false;
+        this.gameOverShown = false;
 
         this.lastUpdate = 0;
-        this.enemies = new ArrayList<Enemy>();
+        this.enemies = new ArrayList<>();
         this.waveHandler = new WaveHandler(level.getWaves(), 1.5, 3.0);
 
         this.selectedTower = null;
         this.range = new Circle();
-        this.towers = new ArrayList<Tower>();
-
-        this.projectiles = new ArrayList<Projectile>();
+        this.towers = new ArrayList<>();
+        this.projectiles = new ArrayList<>();
 
         this.paneEffects = new Pane();
         this.paneEffects.setMouseTransparent(true);
+
         this.paneMap = new Pane();
-        // --- Pane map ---
-        for (int i = 0; i < HEIGHT; i++)
-        {
-            for (int j = 0; j < WIDTH; j++)
-            {
+        for (int i = 0; i < HEIGHT; i++) {
+            for (int j = 0; j < WIDTH; j++) {
                 this.level.getMap().getTileTemplate()[i][j].getSprite().play();
                 this.paneMap.getChildren().add(this.level.getMap().getTileTemplate()[i][j].getSprite().getCurrentFrame());
             }
         }
 
         this.paneEnemies = new Pane();
-
-        this.paneTowers  = new Pane();
-
+        this.paneTowers = new Pane();
         this.paneProjectiles = new Pane();
+        this.paneGameOver = new StackPane();
 
         this.ghostTower = new ImageView();
         this.ghostTower.setFitWidth(64);
         this.ghostTower.setFitHeight(64);
         this.ghostTower.setOpacity(0.5);
-        ghostTower.setVisible(false);
+        this.ghostTower.setVisible(false);
         this.paneEffects.getChildren().add(ghostTower);
 
-        StackPane gameRoot = new StackPane(paneMap, paneTowers, paneEnemies, paneProjectiles, paneEffects);
-        gameRoot.setPrefSize(1920, 896);
-        gameRoot.setMinSize(1920, 896);
-        gameRoot.setMaxSize(1920, 896);
+        this.gameRoot = new StackPane(paneMap, paneTowers, paneEnemies, paneProjectiles, paneEffects);
+        this.gameRoot.setPrefSize(1920, 896);
+        this.gameRoot.setMinSize(1920, 896);
+        this.gameRoot.setMaxSize(1920, 896);
 
-        gameRoot.setOnMouseMoved(event ->
-        {
+        gameRoot.setOnMouseMoved(event -> {
             if (selectedTower == null) return;
 
             int col = (int) (event.getX() / Tile.TILE_SIZE);
             int row = (int) (event.getY() / Tile.TILE_SIZE);
 
+            if (col < 0 || col >= WIDTH || row < 0 || row >= HEIGHT) return;
+
             ghostTower.setX(col * Tile.TILE_SIZE);
             ghostTower.setY(row * Tile.TILE_SIZE);
+            ghostTower.setVisible(true);
 
             Tile tile = level.getMap().getTileTemplate()[row][col];
             boolean placable = tile.getType() == TileType.TOWER_SLOT;
 
-            if (placable)
-            {
+            if (placable) {
                 ghostTower.setStyle("-fx-effect: dropshadow(gaussian, green, 10, 0.5, 0, 0);");
                 this.range.setStroke(Color.GREEN);
-            }
-            else
-            {
+            } else {
                 ghostTower.setStyle("-fx-effect: dropshadow(gaussian, red, 10, 0.5, 0, 0);");
                 this.range.setStroke(Color.RED);
             }
 
             buildRangeCircle(this.choseRange());
-            range.setCenterX(col * Tile.TILE_SIZE + Tile.TILE_SIZE / 2);
-            range.setCenterY(row * Tile.TILE_SIZE + Tile.TILE_SIZE / 2);
-            paneEffects.getChildren().add(range);
-
+            range.setCenterX(col * Tile.TILE_SIZE + Tile.TILE_SIZE / 2.0);
+            range.setCenterY(row * Tile.TILE_SIZE + Tile.TILE_SIZE / 2.0);
+            if (!paneEffects.getChildren().contains(range))
+                paneEffects.getChildren().add(range);
         });
 
-        gameRoot.setOnMouseClicked(event ->
-        {
-            if (event.getButton() == MouseButton.SECONDARY)
-            {
+        gameRoot.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.SECONDARY) {
                 cancelPlacement();
                 this.range.setVisible(false);
-            }
-            else if (event.getButton() == MouseButton.PRIMARY)
-            {
+            } else if (event.getButton() == MouseButton.PRIMARY && selectedTower != null) {
                 int col = (int) (event.getX() / Tile.TILE_SIZE);
                 int row = (int) (event.getY() / Tile.TILE_SIZE);
+
+                if (col < 0 || col >= WIDTH || row < 0 || row >= HEIGHT) return;
 
                 Tile tile = level.getMap().getTileTemplate()[row][col];
                 boolean placable = tile.getType() == TileType.TOWER_SLOT;
 
-                if(placable)
-                {
-                    this.placeTower(this.selectedTower,col,row);
+                if (placable) {
+                    this.placeTower(this.selectedTower, col, row);
                     this.selectedTower = null;
                 }
             }
         });
 
         HBox hud = buildHUD();
-        VBox.setVgrow(hud, Priority.NEVER);
-        hud.setMinHeight(184);
-        hud.setMaxHeight(184);
-        hud.setPrefHeight(184);
 
-        VBox root = new VBox(gameRoot, hud);
-        root.setPrefSize(1920, 1080);
+        VBox layout = new VBox(gameRoot, hud);
+        layout.setPrefSize(1920, 1080);
 
-        this.scene = new Scene(root, 1920, 1080, Color.BLACK);
+        this.rootStack = new StackPane(layout);
+        this.rootStack.setPrefSize(1920, 1080);
 
-        // --- Game loop ---
-        gameLoop = new AnimationTimer()
-        {
+        this.scene = new Scene(rootStack, 1920, 1080, Color.BLACK);
+
+        gameLoop = new AnimationTimer() {
             @Override
-            public void handle(long now)
-            {
-                if (lastUpdate == 0)
-                {
-                    lastUpdate = now;
-                    return;
-                }
+            public void handle(long now) {
+                if (lastUpdate == 0) { lastUpdate = now; return; }
                 double dt = (now - lastUpdate) / 1_000_000_000.0;
                 lastUpdate = now;
                 update(dt);
+                if (baseDestroyed && !gameOverShown) {
+                    gameOverShown = true;
+                    gameOver();
+                }
             }
         };
     }
@@ -181,10 +181,7 @@ public class GameScene {
     private HBox buildHUD()
     {
         Button tower_1 = makeButton("/raph/projects/towerdefense/Images/Blank.png");
-        tower_1.setOnAction(e ->
-        {
-            selectTower(TowerType.CANNON);
-        });
+        tower_1.setOnAction(e -> selectTower(TowerType.CANNON));
 
         Button tower_2 = makeButton("/raph/projects/towerdefense/Images/Blank.png");
         Button tower_3 = makeButton("/raph/projects/towerdefense/Images/Blank.png");
@@ -192,7 +189,7 @@ public class GameScene {
         Button tower_5 = makeButton("/raph/projects/towerdefense/Images/Blank.png");
 
         Button play = makeButton("/raph/projects/towerdefense/Images/HUD/Play.png");
-        play.setOnAction(e -> { this.startAttackPhase();});
+        play.setOnAction(e -> this.startAttackPhase());
 
         Label goldLabel  = makeLabel("💰 250");
         Label livesLabel = makeLabel("❤️ 20");
@@ -206,7 +203,7 @@ public class GameScene {
 
         Region spacerLeft  = new Region();
         Region spacerRight = new Region();
-        HBox.setHgrow(spacerLeft,  Priority.ALWAYS);
+        HBox.setHgrow(spacerLeft, Priority.ALWAYS);
         HBox.setHgrow(spacerRight, Priority.ALWAYS);
 
         HBox hud = new HBox(20, towersBox, spacerLeft, infoBox, spacerRight, play);
@@ -232,9 +229,6 @@ public class GameScene {
         b.setPrefSize(140, 140);
         b.setMinSize(140, 140);
         b.setMaxSize(140, 140);
-
-        // TODO: Désactiver les boutons lorsque les tours ne peuvent pas etre placées
-
         return b;
     }
 
@@ -245,10 +239,7 @@ public class GameScene {
         return l;
     }
 
-    public Scene getScene()
-    {
-        return this.scene;
-    }
+    public Scene getScene() { return this.scene; }
 
     public void startAttackPhase()
     {
@@ -260,48 +251,42 @@ public class GameScene {
     {
         gameLoop.stop();
         level.setPhase(Phase.CONSTRUCTION);
-   }
+    }
 
     private void update(double dt)
     {
-        if (level.getPhase() == Phase.DEFENSE)
-        {
+        if (level.getPhase() == Phase.DEFENSE) {
             waveHandler.update(dt);
-            if (waveHandler.shouldSpawn())
-            {
+            if (waveHandler.shouldSpawn()) {
                 spawnEnemy();
                 waveHandler.decrementSpawn();
             }
             this.updateEnemies(dt);
-            if (waveHandler.isWaveFinished() && enemies.isEmpty())
-            {
-                if (waveHandler.isLevelFinished())
-                {
-                    // TODO : victoire
-
-                }
-                else
-                {
+            this.updateBase();
+            if (waveHandler.isWaveFinished() && enemies.isEmpty()) {
+                if (waveHandler.isLevelFinished()) {
+                    gameOverShown = true;
+                    gameOver();
+                } else {
                     waveHandler.notifyWaveCleared();
                     stopAttackPhase();
                 }
             }
             this.updateTowers(dt);
             this.updateProjectiles(dt);
-
         }
     }
 
     private void updateEnemies(double dt)
     {
-        for (Enemy e : enemies)
-        {
+        for (Enemy e : enemies) {
             e.update(dt);
+            if (e.hasReachedBase()) {
+                this.level.getBase().damaged(e.getDamage());
+            }
         }
-        enemies.removeIf(e ->
-        {
-            if (!e.isAlive() || e.hasReachedBase())
-            {
+        enemies.removeIf(e -> {
+            if (!e.isAlive() || e.hasReachedBase()) {
                 paneEnemies.getChildren().remove(e.getSprite().getCurrentFrame());
                 return true;
             }
@@ -319,16 +304,12 @@ public class GameScene {
 
     private void selectTower(TowerType t)
     {
-        String path;
         this.selectedTower = t;
-        switch(this.selectedTower)
-        {
-            case CANNON -> path ="/raph/projects/towerdefense/Images/Towers/Icons/Cannon_Icon.png";
-            default -> path = "/raph/projects/towerdefense/Images/Blank.png";
-        }
-        Image img = new Image(getClass().getResourceAsStream(path));
-        ghostTower.setImage(img);
-        ghostTower.setVisible(true);
+        String path = switch (t) {
+            case CANNON -> "/raph/projects/towerdefense/Images/Towers/Icons/Cannon_Icon.png";
+            default -> "/raph/projects/towerdefense/Images/Blank.png";
+        };
+        ghostTower.setImage(new Image(getClass().getResourceAsStream(path)));
     }
 
     private void cancelPlacement()
@@ -348,33 +329,31 @@ public class GameScene {
 
     private int choseRange()
     {
-        return switch(this.selectedTower)
-        {
-            case CANNON -> 2;
-            case ARCANE -> 3;
-            case BOMB -> 2;
-            case FROST -> 2;
+        return switch (this.selectedTower) {
+            case CANNON   -> 2;
+            case ARCANE   -> 3;
+            case BOMB     -> 2;
+            case FROST    -> 2;
             case BALLISTA -> 5;
-            default -> 0;
-
+            default       -> 0;
         };
     }
-    private void placeTower(TowerType type,int col, int row)
+
+    private void placeTower(TowerType type, int col, int row)
     {
-        Tower t = new Tower(type,"/raph/projects/towerdefense/Images/Towers/Icons/Cannon_Icon.png");
+        Tower t = new Tower(type, "/raph/projects/towerdefense/Images/Towers/Icons/Cannon_Icon.png");
         this.towers.add(t);
         t.getSprite().play();
-
-        t.move(col*Tile.TILE_SIZE,row*Tile.TILE_SIZE);
-        t.getSprite().getCurrentFrame().setX(col*Tile.TILE_SIZE);
-        t.getSprite().getCurrentFrame().setY(row*Tile.TILE_SIZE);
-
+        t.move(col * Tile.TILE_SIZE, row * Tile.TILE_SIZE);
+        t.getSprite().getCurrentFrame().setX(col * Tile.TILE_SIZE);
+        t.getSprite().getCurrentFrame().setY(row * Tile.TILE_SIZE);
         this.paneTowers.getChildren().add(t.getSprite().getCurrentFrame());
         this.range.setVisible(false);
         this.ghostTower.setVisible(false);
     }
 
-    private void updateTowers(double dt) {
+    private void updateTowers(double dt)
+    {
         for (Tower t : this.towers) {
             t.update(dt, this.enemies);
             Projectile p = t.shoot();
@@ -385,10 +364,9 @@ public class GameScene {
         }
     }
 
-    private void updateProjectiles(double dt) {
-        for (Projectile p : projectiles) {
-            p.update(dt);
-        }
+    private void updateProjectiles(double dt)
+    {
+        for (Projectile p : projectiles) p.update(dt);
         projectiles.removeIf(p -> {
             if (p.isFinished()) {
                 paneProjectiles.getChildren().remove(p.getSprite().getCurrentFrame());
@@ -396,5 +374,83 @@ public class GameScene {
             }
             return false;
         });
+    }
+
+    private void updateBase()
+    {
+        if (!this.level.getBase().isAlive()) this.baseDestroyed = true;
+    }
+
+    private void gameOver()
+    {
+        gameLoop.stop();
+        for (Enemy e : this.enemies) e.getSprite().stop();
+
+        // floute tout le layout (jeu + HUD)
+        rootStack.getChildren().get(0).setEffect(new GaussianBlur(10));
+
+        if (baseDestroyed) initGameOver();
+        else initVictory();
+    }
+
+    private void initGameOver()
+    {
+        Rectangle overlay = new Rectangle(1920, 1080);
+        overlay.setFill(Color.rgb(0, 0, 0, 0.5));
+
+        Label title = new Label("GAME OVER");
+        title.setStyle("-fx-font-size: 80px; -fx-text-fill: red; -fx-font-weight: bold;");
+
+        Button retry = new Button("Rejouer");
+        retry.setOnAction(e -> {
+            try {
+                stage.setScene(new GameScene(stage, id).getScene());
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
+
+        Button menu = new Button("Menu principal");
+        menu.setOnAction(e -> {
+            try {
+                stage.setScene(new MenuScene(stage).getScene());
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
+
+        VBox content = new VBox(30, title, retry, menu);
+        content.setAlignment(Pos.CENTER);
+
+        this.paneGameOver = new StackPane(overlay, content);
+        this.paneGameOver.setPrefSize(1920, 1080);
+
+        rootStack.getChildren().add(paneGameOver);
+    }
+
+    private void initVictory()
+    {
+        Rectangle overlay = new Rectangle(1920, 1080);
+        overlay.setFill(Color.rgb(0, 0, 0, 0.5));
+
+        Label title = new Label("VICTORY !");
+        title.setStyle("-fx-font-size: 80px; -fx-text-fill: gold; -fx-font-weight: bold;");
+
+        Button menu = new Button("Menu principal");
+        menu.setOnAction(e -> {
+            try {
+                stage.setScene(new MenuScene(stage).getScene());
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
+
+        VBox content = new VBox(30, title, menu);
+        content.setAlignment(Pos.CENTER);
+
+        this.paneGameOver = new StackPane(overlay, content);
+        this.paneGameOver.setPrefSize(1920, 1080);
+
+        rootStack.getChildren().add(paneGameOver);
     }
 }

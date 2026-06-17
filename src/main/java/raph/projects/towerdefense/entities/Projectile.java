@@ -20,7 +20,7 @@ public class Projectile
         this.x = t.getX();
         this.y = t.getY();
         this.damage = t.getDamage();
-        this.speed = t.getRange() * 256;
+        this.speed = t.getRange() * 200;
         this.finished = false;
 
         // calcul du point d'interception
@@ -33,7 +33,7 @@ public class Projectile
 
         switch(t.getType())
         {
-            case CANNON -> this.sprite = new Sprite("/raph/projects/towerdefense/Images/Projectiles/Cannon_Pro.png",1,10,3,1);
+            case CANNON -> this.sprite = new Sprite("/raph/projects/towerdefense/Images/Projectiles/Cannon_Pro.png",1,21,21,1);
             default -> this.sprite = new Sprite("/raph/projects/towerdefense/Images/Blank.png",1,64,64,1);
         }
 
@@ -57,7 +57,7 @@ public class Projectile
         double distance = Math.sqrt(dx * dx + dy * dy);
         double pixelsThisFrame = speed * dt;
 
-        if (distance <= pixelsThisFrame) {
+        if (distance <= pixelsThisFrame + 16) {
             if (target.isAlive()) target.damaged(damage);
             finished = true;
         } else {
