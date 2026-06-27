@@ -17,6 +17,7 @@ public class Level
     private Base base;
     private List<Wave> waves;
     private int currentWave;
+    private int gold;
 
     public Level(int i,Map m)
     {
@@ -24,6 +25,14 @@ public class Level
         this.map = m;
         this.phase = Phase.CONSTRUCTION;
         this.base = new Base();
+        this.gold = switch(i) {
+            case 1 -> 300;
+            case 2 -> 350;
+            case 3 -> 400;
+            case 4 -> 450;
+            case 5 -> 500;
+            default -> 300;
+        };
 
         this.currentWave = 0;
         this.waves = new ArrayList<Wave>();
@@ -53,25 +62,18 @@ public class Level
     {
         switch(this.id)
         {
-            case 1 ->
-                    {
-                        //First wave
-                        this.waves.add(new Wave());
-                        this.waves.get(0).addGroup(new EnemyGroup(EnemyType.GOBELIN,5,this.map.getEnemyPath()));
-                        //Second wave
-                        this.waves.add(new Wave());
-                        this.waves.get(1).addGroup(new EnemyGroup(EnemyType.GOBELIN,8,this.map.getEnemyPath()));
-                        //Third wave
-                        this.waves.add(new Wave());
-                        this.waves.get(2).addGroup(new EnemyGroup(EnemyType.GOBELIN,12,this.map.getEnemyPath()));
-                        //Fourth wave
-                        this.waves.add(new Wave());
-                        this.waves.get(3).addGroup(new EnemyGroup(EnemyType.GOBELIN,16,this.map.getEnemyPath()));
-                        //Fifth wave
-                        this.waves.add(new Wave());
-                        this.waves.get(4).addGroup(new EnemyGroup(EnemyType.GOBELIN,22,this.map.getEnemyPath()));
-
-                    }
+            case 1 -> {
+                this.waves.add(new Wave());
+                this.waves.get(0).addGroup(new EnemyGroup(EnemyType.GOBELIN, 5, this.map.getEnemyPath(), this.id));
+                this.waves.add(new Wave());
+                this.waves.get(1).addGroup(new EnemyGroup(EnemyType.GOBELIN, 8, this.map.getEnemyPath(), this.id));
+                this.waves.add(new Wave());
+                this.waves.get(2).addGroup(new EnemyGroup(EnemyType.GOBELIN, 12, this.map.getEnemyPath(), this.id));
+                this.waves.add(new Wave());
+                this.waves.get(3).addGroup(new EnemyGroup(EnemyType.GOBELIN, 16, this.map.getEnemyPath(), this.id));
+                this.waves.add(new Wave());
+                this.waves.get(4).addGroup(new EnemyGroup(EnemyType.GOBELIN, 22, this.map.getEnemyPath(), this.id));
+            }
             default ->
                     {
 
@@ -87,6 +89,18 @@ public class Level
     public List<Wave> getWaves()
     {
         return this.waves;
+    }
+
+    public int getGold() { return this.gold; }
+
+    public void addGold(int amount) { this.gold += amount; }
+
+    public boolean spendGold(int amount) {
+        if (this.gold >= amount) {
+            this.gold -= amount;
+            return true;
+        }
+        return false;
     }
 
 

@@ -11,11 +11,12 @@ public class Enemy extends Entity implements Damageable, DamageDealer
     private int damage;
     private Tile[] path;
     private int pathIndex;
+    private int goldReward;
 
     private double vx;
     private double vy;
 
-    public Enemy(EnemyType t, Tile[] path)
+    public Enemy(EnemyType t, Tile[] path, int level)
     {
         super(initSprite(t));
         this.type = t;
@@ -32,14 +33,17 @@ public class Enemy extends Entity implements Damageable, DamageDealer
                 this.speed = 3;
                 this.damage = 3;
             }
-            default ->
-            {
+            default -> {
                 this.health = 1;
                 this.speed = 1;
                 this.damage = 1;
             }
         }
+
+        this.goldReward = computeGoldReward(t, level);
     }
+
+    public int getGoldReward() { return this.goldReward; }
 
     public EnemyType getType()
     {
@@ -69,6 +73,24 @@ public class Enemy extends Entity implements Damageable, DamageDealer
     public void setSpeed(int s)
     {
         this.speed = s;
+    }
+
+    private static int computeGoldReward(EnemyType t, int level)
+    {
+        int[] goblinGold = {10, 12, 15, 18, 22};
+        int[] wraithGold  = {0, 15, 18, 22, 28};
+        int[] ogreGold    = {0, 0, 30, 38, 45};
+        int[] ratGold     = {0, 0, 0, 5, 7};
+        int[] demonGold   = {0, 0, 0, 0, 80};
+
+        int idx = level - 1;
+        return switch (t) {
+            case GOBELIN -> goblinGold[idx];
+            case WRAITH  -> wraithGold[idx];
+            case OGRE    -> ogreGold[idx];
+            case RAT     -> ratGold[idx];
+            case DEMON   -> demonGold[idx];
+        };
     }
 
     public double getVelocityX() { return this.vx; }

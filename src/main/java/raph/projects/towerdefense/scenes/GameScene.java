@@ -58,6 +58,11 @@ public class GameScene {
     private StackPane gameRoot;
     private StackPane rootStack;
 
+    private Label goldLabel;
+    private Label livesLabel;
+    private Label waveLabel;
+    private Button tower_1, tower_2, tower_3, tower_4, tower_5;
+
     public GameScene(Stage stage, int id) throws IOException
     {
         this.stage = stage;
@@ -180,20 +185,27 @@ public class GameScene {
 
     private HBox buildHUD()
     {
-        Button tower_1 = makeButton("/raph/projects/towerdefense/Images/Blank.png");
+        tower_1 = makeButton("/raph/projects/towerdefense/Images/Blank.png", TowerType.CANNON.getCost());
         tower_1.setOnAction(e -> selectTower(TowerType.CANNON));
 
-        Button tower_2 = makeButton("/raph/projects/towerdefense/Images/Blank.png");
-        Button tower_3 = makeButton("/raph/projects/towerdefense/Images/Blank.png");
-        Button tower_4 = makeButton("/raph/projects/towerdefense/Images/Blank.png");
-        Button tower_5 = makeButton("/raph/projects/towerdefense/Images/Blank.png");
+        tower_2 = makeButton("/raph/projects/towerdefense/Images/Blank.png", TowerType.ARCANE.getCost());
+        tower_2.setOnAction(e -> selectTower(TowerType.ARCANE));
 
-        Button play = makeButton("/raph/projects/towerdefense/Images/HUD/Play.png");
+        tower_3 = makeButton("/raph/projects/towerdefense/Images/Blank.png", TowerType.BOMB.getCost());
+        tower_3.setOnAction(e -> selectTower(TowerType.BOMB));
+
+        tower_4 = makeButton("/raph/projects/towerdefense/Images/Blank.png", TowerType.FROST.getCost());
+        tower_4.setOnAction(e -> selectTower(TowerType.FROST));
+
+        tower_5 = makeButton("/raph/projects/towerdefense/Images/Blank.png", TowerType.BALLISTA.getCost());
+        tower_5.setOnAction(e -> selectTower(TowerType.BALLISTA));
+
+        Button play = makeButton("/raph/projects/towerdefense/Images/HUD/Play.png", -1);
         play.setOnAction(e -> this.startAttackPhase());
 
-        Label goldLabel  = makeLabel("💰 250");
-        Label livesLabel = makeLabel("❤️ 20");
-        Label waveLabel  = makeLabel("Wave 1/5");
+        this.goldLabel  = makeLabel("💰 " + level.getGold());
+        this.livesLabel = makeLabel("❤️ " + level.getBase().getHealth());
+        this.waveLabel  = makeLabel("Wave " + (waveHandler.getCurrentWaveIndex() + 1) + "/" + level.getWaves().size());
 
         HBox towersBox = new HBox(10, tower_1, tower_2, tower_3, tower_4, tower_5);
         towersBox.setAlignment(Pos.CENTER_LEFT);
@@ -214,18 +226,30 @@ public class GameScene {
         hud.setPadding(new Insets(0, 20, 0, 20));
         hud.setStyle("-fx-background-color: black;");
 
+        updateTowerButtons();
+
         return hud;
     }
 
-    private Button makeButton(String path)
+    private Button makeButton(String path, int cost)
     {
-        Button b = new Button();
         Image img = new Image(getClass().getResourceAsStream(path));
         ImageView iv = new ImageView(img);
-        b.setGraphic(iv);
         iv.setFitWidth(140);
         iv.setFitHeight(140);
         iv.setPreserveRatio(true);
+
+        Button b = new Button();
+        if (cost >= 0) {
+            Label costLabel = new Label(cost + "💰");
+            costLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: white;");
+            VBox content = new VBox(2, iv, costLabel);
+            content.setAlignment(Pos.CENTER);
+            b.setGraphic(content);
+        } else {
+            b.setGraphic(iv);
+        }
+
         b.setPrefSize(140, 140);
         b.setMinSize(140, 140);
         b.setMaxSize(140, 140);
@@ -269,6 +293,7 @@ public class GameScene {
                     gameOver();
                 } else {
                     waveHandler.notifyWaveCleared();
+                    updateWaveLabel();
                     stopAttackPhase();
                 }
             }
@@ -287,11 +312,16 @@ public class GameScene {
         }
         enemies.removeIf(e -> {
             if (!e.isAlive() || e.hasReachedBase()) {
+                if (!e.isAlive()) {
+                    level.addGold(e.getGoldReward());
+                    updateGoldLabel();
+                }
                 paneEnemies.getChildren().remove(e.getSprite().getCurrentFrame());
                 return true;
             }
             return false;
         });
+        updateLivesLabel();
     }
 
     private void spawnEnemy()
@@ -304,6 +334,8 @@ public class GameScene {
 
     private void selectTower(TowerType t)
     {
+        if (level.getGold() < t.getCost()) return; // sécurité si bouton pas désactivé à temps
+
         this.selectedTower = t;
         String path = switch (t) {
             case CANNON -> "/raph/projects/towerdefense/Images/Towers/Icons/Cannon_Icon.png";
@@ -341,6 +373,8 @@ public class GameScene {
 
     private void placeTower(TowerType type, int col, int row)
     {
+        if (!level.spendGold(type.getCost())) return;
+
         Tower t = new Tower(type, "/raph/projects/towerdefense/Images/Towers/Icons/Cannon_Icon.png");
         this.towers.add(t);
         t.getSprite().play();
@@ -350,6 +384,8 @@ public class GameScene {
         this.paneTowers.getChildren().add(t.getSprite().getCurrentFrame());
         this.range.setVisible(false);
         this.ghostTower.setVisible(false);
+
+        updateGoldLabel();
     }
 
     private void updateTowers(double dt)
@@ -381,12 +417,31 @@ public class GameScene {
         if (!this.level.getBase().isAlive()) this.baseDestroyed = true;
     }
 
+    private void updateGoldLabel()
+    {
+        goldLabel.setText("💰 " + level.getGold());
+        updateTowerButtons();
+    }
+
+    private void updateLivesLabel()
+    {
+        livesLabel.setText("❤️ " + level.getBase().getHealth());
+    }
+
+    private void updateTowerButtons()
+    {
+        tower_1.setDisable(level.getGold() < TowerType.CANNON.getCost());
+        tower_2.setDisable(level.getGold() < TowerType.ARCANE.getCost());
+        tower_3.setDisable(level.getGold() < TowerType.BOMB.getCost());
+        tower_4.setDisable(level.getGold() < TowerType.FROST.getCost());
+        tower_5.setDisable(level.getGold() < TowerType.BALLISTA.getCost());
+    }
+
     private void gameOver()
     {
         gameLoop.stop();
         for (Enemy e : this.enemies) e.getSprite().stop();
 
-        // floute tout le layout (jeu + HUD)
         rootStack.getChildren().get(0).setEffect(new GaussianBlur(10));
 
         if (baseDestroyed) initGameOver();
@@ -452,5 +507,12 @@ public class GameScene {
         this.paneGameOver.setPrefSize(1920, 1080);
 
         rootStack.getChildren().add(paneGameOver);
+    }
+
+    private void updateWaveLabel()
+    {
+        int current = waveHandler.getCurrentWaveIndex() + 1; // +1 car index commence à 0
+        int total = level.getWaves().size();
+        waveLabel.setText("Wave " + current + "/" + total);
     }
 }

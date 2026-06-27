@@ -11,14 +11,14 @@ public class EnemyGroup
     private int quantity;
     private List<Enemy> enemies;
 
-    public EnemyGroup(EnemyType t, int q, Tile[] path)
+    public EnemyGroup(EnemyType t, int q, Tile[] path, int level)
     {
         this.type = t;
         this.quantity = q;
         this.enemies = new ArrayList<Enemy>();
         for(int i = 0; i < q; i++)
         {
-            this.enemies.add(new Enemy(this.type,path));
+            this.enemies.add(new Enemy(this.type, path, level));
         }
     }
 
